@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "gcc.exe",
+            "command": "gcc",
+            "args": [
+                "-o", "build/${fileBasenameNoExtension}.exe", "src/${fileBasename}"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
