@@ -8,6 +8,12 @@
 #define ROWS 10
 #define COLS 10
 
+#define TOP     0
+#define RIGHT   1
+#define BOTTOM  2
+#define LEFT    3
+
+
 typedef uint8_t SMALL;
 
 // Cell structure to store the information of each cell
@@ -36,16 +42,6 @@ void push(Node **head, Cell *cell){
     *head = newHead;
 }
 
-Cell* getIndex(Node **head, SMALL index){
-    
-    Node *p = *head;
-    
-    for(SMALL i = 0; i < index; i++)
-        p = p->next;
-
-    return p->cell;
-}
-
 void freeList(Node **head){
     Node *p = *head;
     Node* tmp;
@@ -56,6 +52,16 @@ void freeList(Node **head){
         p = p->next;
         free(tmp);
     }
+}
+
+Cell* getIndex(Node **head, SMALL index){
+    
+    Node *p = *head;
+    
+    for(SMALL i = 0; i < index; i++)
+        p = p->next;
+
+    return p->cell;
 }
 
 void initGrid(Cell *grid){
@@ -122,22 +128,22 @@ Cell* checkNeighbors(Cell *cell){
     SMALL n = 0;
 
     if(topNeighbor != NULL && !topNeighbor->visited){
-        printf("Top: (%i, %i)\n", topNeighbor->row, topNeighbor->col);
+        // printf("Top: (%i, %i)\n", topNeighbor->row, topNeighbor->col);
         push(&head, topNeighbor);
         n++;
     }
     if(rightNeighbor != NULL && !rightNeighbor->visited){
-        printf("Right: (%i, %i)\n", rightNeighbor->row, rightNeighbor->col);
+        // printf("Right: (%i, %i)\n", rightNeighbor->row, rightNeighbor->col);
         push(&head, rightNeighbor);
         n++;
     }
     if(bottomNeighbor != NULL && !bottomNeighbor->visited){
-        printf("Bottom: (%i, %i)\n", bottomNeighbor->row, bottomNeighbor->col);
+        // printf("Bottom: (%i, %i)\n", bottomNeighbor->row, bottomNeighbor->col);
         push(&head, bottomNeighbor);
         n++;
     }
     if(leftNeighbor != NULL && !leftNeighbor->visited){
-        printf("Left: (%i, %i)\n", leftNeighbor->row, leftNeighbor->col);
+        // printf("Left: (%i, %i)\n", leftNeighbor->row, leftNeighbor->col);
         push(&head, leftNeighbor);
         n++;
     }
@@ -154,30 +160,65 @@ Cell* checkNeighbors(Cell *cell){
     return neighbor;
 }
 
+void removeWalls(Cell *curr, Cell *next){
+
+    SMALL y = curr->row - next->row;
+    // [2, 0] [1, 0]    GO UP       curr = 2, next = 1 => curr - next = 1    
+    // [1, 0] [2, 0]    GO DOWN     curr = 1, next = 2 => curr - next = -1   
+    SMALL x = curr->col - next->col;
+    // [0, 2] [0, 1]    GO LEFT     curr = 2, next = 1 => curr - next = 1    
+    // [0, 1] [0, 2]    GO RIGHT    curr = 1, next = 2 => curr - next = -1   
+
+    // Remove top wall
+    if (y == 1){
+        curr->walls[TOP] = false;
+        next->walls[BOTTOM] = false;
+    }
+    // Remove right wall
+    else if (x == -1){
+        curr->walls[RIGHT] = false;
+        next->walls[LEFT] = false;
+    } 
+    // Remove bottom wall
+    else if (y == -1){
+        curr->walls[BOTTOM] = false;
+        next->walls[TOP] = false;
+    } 
+    // Remove left wall
+    else if (x == 1){
+        curr->walls[LEFT] = false;
+        next->walls[RIGHT] = false;
+    }
+}
+
 int main(void){
 
-    srand(time(NULL));
+    srand(time(0));
 
     Cell grid[ROWS][COLS];
 
-    // Set ups the pointer that will traverse the grid
-    Cell *ptr = *grid;
+    // Pointer that traverses the grid
+    Cell *curr = *grid;
+    // Auxiliar pointer that stores the neighbor
+    Cell *next = NULL;
 
     // Initialize grid
-    initGrid(ptr);
+    initGrid(curr);
 
     // The maze starts generating at (0,0)
-    ptr->visited = true;
+    curr->visited = true;
+    printf("%i, %i\n", curr->row, curr->col);
 
-    printf("First\n");
-    ptr = checkNeighbors(ptr);
-    ptr->visited = true;
-    printf("Second\n");
-    ptr = checkNeighbors(ptr);
-    ptr->visited = true;
-    printf("Third\n");
-    ptr = checkNeighbors(ptr);
-    ptr->visited = true;
+    /* Step 1*/
+    while(true){
+        next = checkNeighbors(curr);
+        if (next == NULL)
+            break;
+        removeWalls(curr, next);
+        curr = next;
+        curr->visited = true;
+        printf("%i, %i\n", curr->row, curr->col);
+    }
 
     return 0;
 }
