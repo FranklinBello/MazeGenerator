@@ -230,6 +230,39 @@ void showMaze(Cell *curr){
     }
 }
 
+/* Writes the maze on a file with the date and time when it was generated */
+void printMaze(Cell *curr, FILE *file){
+
+    if (file == NULL)
+        return;
+
+    fprintf(file, "\t%ix%i Maze\n\n", nrow, ncol);
+
+    Cell *p = NULL;
+    fprintf(file, "\t");
+    for(int j = 0; j < ncol; j++){
+        p = curr + j;
+        if(p->walls[TOP])
+            fprintf(file, " _");
+    }
+    fprintf(file, "\n");
+    for(int i = 0; i < nrow; i++){
+        fprintf(file, "\t");
+        for(int j = 0; j < ncol; j++){
+            p = curr + i*ncol + j;
+            if(p->walls[LEFT] && p->walls[BOTTOM])
+                fprintf(file, "|_");
+            else if (p->walls[LEFT])
+                fprintf(file, "| ");
+            else if (p->walls[BOTTOM])
+                fprintf(file, " _");
+            else
+                fprintf(file, "  ");
+        }
+        fprintf(file, "|\n");
+    }
+}
+
 /* Accepts two parameters, the no. of rows and the no. of columns of the maze */
 int main(int argc, char *argv[]){
 
@@ -248,6 +281,14 @@ int main(int argc, char *argv[]){
     if (!(nrow >= 1 && ncol >= 1)){
         SMALL err = 2;
         printf("Usage: nrow > 0 and ncol > 0\n");
+        printf("%i\n", err);
+        return err;
+    }
+    
+    /* Number of rows and columns must be less than 128 */
+    if (!(nrow < 128 && ncol < 128)){
+        SMALL err = 3;
+        printf("Usage: nrow < 128 and ncol < 128\n");
         printf("%i\n", err);
         return err;
     }
@@ -293,9 +334,16 @@ int main(int argc, char *argv[]){
         }
     }
 
-    /* Display the maze on console */
-    printf("\nDrawing a %ix%i Maze\n", nrow, ncol);
+    /* show maze on console */
+    printf("Succesfully generated a %ix%i maze\n", nrow, ncol);
     showMaze(curr);
+
+    /* Prints the maze into a file */
+    char filename[30];
+    sprintf(filename, "Maze_%ix%i.txt", nrow, ncol);
+    FILE *file = fopen(filename, "w+");
+    printMaze(curr, file);
+    fclose(file);
 
     return 0;
 }
