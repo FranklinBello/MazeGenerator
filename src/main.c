@@ -5,8 +5,8 @@
 #include <time.h>
 
 // Dimensions of the Maze
-#define ROWS 5
-#define COLS 5
+#define ROWS 15
+#define COLS 15
 
 #define TOP     0
 #define RIGHT   1
@@ -41,19 +41,14 @@ void push(Node **head, Cell *cell){
 }
 
 Cell* pop(Node **head){
-
     if(*head == NULL)
         return NULL;
-
     Node *p = *head;
     Cell *c = p->cell;
-
-    // The new head is the next one
-    *head = p->next;
-    // Free the node
-    free(p);
-    // Return a pointer to the popped cell
-    return c;
+    
+    *head = p->next; // The new head is the next one
+    free(p);         // Free the node
+    return c;        // Return a pointer to the popped cell
 }
 
 bool isEmpty(Node **head){
@@ -64,16 +59,6 @@ bool isEmpty(Node **head){
         curr = curr->next;
     }
     return true;
-}
-
-Cell* getIndex(Node **head, SMALL index){
-    
-    Node *p = *head;
-    
-    for(SMALL i = 0; i < index; i++)
-        p = p->next;
-
-    return p->cell;
 }
 
 void freeList(Node **head){
@@ -104,36 +89,41 @@ void initGrid(Cell *grid){
     }
 }
 
+Cell* getIndex(Node **head, SMALL index){
+    Node *p = *head;
+    for (SMALL i = 0; i < index; i++)
+        p = p->next;
+    return p->cell;
+}
+
 Cell* getTopNeighbor(Cell *cell){
-    if(cell->row - 1 < 0){
+    if (cell->row - 1 < 0)
         return NULL;
-    } else {
+    else
         return cell - COLS;
-    }
 }
 
 Cell* getRightNeighbor(Cell *cell){
-    if(cell->col + 1 > COLS - 1){
+    if (cell->col + 1 > COLS - 1)
         return NULL;
-    } else {
+    else
         return cell + 1;
-    }
+    
 }
 
 Cell* getBottomNeighbor(Cell *cell){
-    if(cell->row + 1 > ROWS - 1){
+    if (cell->row + 1 > ROWS - 1)
         return NULL;
-    } else {
+    else
         return cell + COLS;
-    }
 }
 
 Cell* getLeftNeighbor(Cell *cell){
-    if(cell->col - 1 < 0){
+    if (cell->col - 1 < 0)
         return NULL;
-    } else {
+    else
         return cell - 1;
-    }
+    
 }
 
 Cell* checkNeighbors(Cell *cell){
@@ -214,22 +204,29 @@ void removeWalls(Cell *curr, Cell *next){
     }
 }
 
-void drawGrid(Cell *curr){
-    for(SMALL i = 0; i < ROWS; i++){
-        for(SMALL j = 0; j < COLS; j++){
-            Cell *p = curr + i*COLS + j;
-            printf("Cell [%i, %i] = ", p->row, p->col);
-            if (p->walls[TOP])
-                printf(" Top ");
-            if (p->walls[RIGHT])
-                printf(" Right ");
-            if (p->walls[BOTTOM])
-                printf(" Bottom ");
-            if (p->walls[LEFT])
-                printf(" Left ");
-            printf("\n");
+void showMaze(Cell *curr){
+    Cell *p = NULL;
+    printf("\t");
+    for(int j = 0; j < COLS; j++){
+        p = curr + j;
+        if(p->walls[TOP])
+            printf(" _");
+    }
+    printf("\n");
+    for(int i = 0; i < ROWS; i++){
+        printf("\t");
+        for(int j = 0; j < COLS; j++){
+            p = curr + i*COLS + j;
+            if(p->walls[LEFT] && p->walls[BOTTOM])
+                printf("|_");
+            else if (p->walls[LEFT])
+                printf("| ");
+            else if (p->walls[BOTTOM])
+                printf(" _");
+            else
+                printf("  ");
         }
-        printf("\n");
+        printf("|\n");
     }
 }
 
@@ -256,9 +253,9 @@ int main(void){
     while(true){
         next = checkNeighbors(curr);
         if (next != NULL){
-            printf("Going from [%i, %i] to [%i, %i]\n", curr->row, curr->col, next->row, next->col);
             push(&stack, curr);
             removeWalls(curr, next);
+            // printf("Going from [%i, %i] to [%i, %i]\n", curr->row, curr->col, next->row, next->col);
             curr = next;
             curr->visited = true;
         } else if (!isEmpty(&stack)) {
@@ -272,7 +269,8 @@ int main(void){
         }
     }
 
-    // drawGrid(curr);
+    printf("Drawing a <%i x %i> Maze\n", ROWS, COLS);
+    showMaze(curr);
 
     return 0;
 }
