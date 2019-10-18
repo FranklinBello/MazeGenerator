@@ -2,55 +2,54 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
-
-// Dimensions of the Maze
-#define ROWS 15
-#define COLS 15
 
 #define TOP     0
 #define RIGHT   1
 #define BOTTOM  2
 #define LEFT    3
 
-typedef uint8_t SMALL;
+typedef int8_t SMALL;
 
-// Cell structure to store the information of each cell
+/* Dimensions of the Maze */
+SMALL nrow;
+SMALL ncol;
+
+/* Store the information of each cell */
 typedef struct Cell{
-    SMALL row;      // row
-    SMALL col;      // col
-    bool walls[4];  // [0]top [1]right [2]bottom [3]left
+    SMALL row;     
+    SMALL col;  
+    bool walls[4]; 
     bool visited;
 }Cell;
 
-// Node structure for linked list
+/* Linked list of Cells */
 typedef struct Node{
-    Cell *cell;         // Pointer of cell
+    Cell *cell;         // Pointer to cell
     struct Node *next;  // Pointer to the next node
 }Node;
 
-// Adds an element at the beginning of the list
+/* Adds an element at the top of the stack */
 void push(Node **head, Cell *cell){
-    // Allocate the node that will go at the beginning
     Node *newHead = (Node*) malloc(sizeof(Node));
     newHead->cell = cell;
     newHead->next = *head;
-
-    // Move the head to point to the new node
     *head = newHead;
 }
 
+/* Removes element from the top of the stack and returns it value */
 Cell* pop(Node **head){
     if(*head == NULL)
         return NULL;
     Node *p = *head;
     Cell *c = p->cell;
-    
-    *head = p->next; // The new head is the next one
-    free(p);         // Free the node
-    return c;        // Return a pointer to the popped cell
+    *head = p->next; // The new top is the Node that follows
+    free(p);         // Free the popped Node
+    return c;        // Returns address of the popped cell
 }
 
+/* Check if the stack is empty */
 bool isEmpty(Node **head){
     Node *curr = *head;
     while(curr != NULL){
@@ -61,63 +60,70 @@ bool isEmpty(Node **head){
     return true;
 }
 
+/* Free the node from memory */
 void freeList(Node **head){
     Node *p = *head;
     Node* tmp;
-
-    while (p != NULL)
-    {
+    while (p != NULL){
         tmp = p;
         p = p->next;
         free(tmp);
     }
 }
 
+/* Initializes each cell with default values */
 void initGrid(Cell *grid){
     Cell *ptr = NULL;
-    for(int i = 0; i < ROWS; i++){
-        for(int j = 0; j < COLS; j++){
-            ptr = grid + i*COLS + j;
+    for(int i = 0; i < nrow; i++)
+        for(int j = 0; j < ncol; j++){
+            ptr = grid + i*ncol + j;
+            /* The coordinates of each cell */
             ptr->row = i;
             ptr->col = j;
-            ptr->walls[0] = true;
+            /* All walls are closed */
+            ptr->walls[0] = true;   
             ptr->walls[1] = true;
             ptr->walls[2] = true;
             ptr->walls[3] = true;
+            /* Every cell is unvisited*/
             ptr->visited = false;
         }
-    }
 }
 
-Cell* getIndex(Node **head, SMALL index){
+/* Returns the nth element from the stack */
+Cell* getIndex(Node **head, SMALL n){
     Node *p = *head;
-    for (SMALL i = 0; i < index; i++)
+    for (SMALL i = 0; i < n; i++)
         p = p->next;
     return p->cell;
 }
 
+/* Returns the top neighbor of the cell if available */
 Cell* getTopNeighbor(Cell *cell){
     if (cell->row - 1 < 0)
         return NULL;
     else
-        return cell - COLS;
+        return cell - ncol;
 }
 
+/* Returns the right neighbor of the cell if available */
 Cell* getRightNeighbor(Cell *cell){
-    if (cell->col + 1 > COLS - 1)
+    if (cell->col + 1 > ncol - 1)
         return NULL;
     else
         return cell + 1;
     
 }
 
+/* Returns the bottom neighbor of the cell if available */
 Cell* getBottomNeighbor(Cell *cell){
-    if (cell->row + 1 > ROWS - 1)
+    if (cell->row + 1 > nrow - 1)
         return NULL;
     else
-        return cell + COLS;
+        return cell + ncol;
 }
 
+/* Returns the left neighbor of the cell if available */
 Cell* getLeftNeighbor(Cell *cell){
     if (cell->col - 1 < 0)
         return NULL;
@@ -126,97 +132,91 @@ Cell* getLeftNeighbor(Cell *cell){
     
 }
 
+/* Returns a random neighbor of the cell if available */
 Cell* checkNeighbors(Cell *cell){
-    // Top neighbor
-    Cell *topNeighbor = getTopNeighbor(cell);
-    // Right neighbor
-    Cell *rightNeighbor = getRightNeighbor(cell);
-    // Bottom neighbor
+    /* Get the neighbors of the cell */
+    Cell *topNeighbor    = getTopNeighbor(cell);
+    Cell *rightNeighbor  = getRightNeighbor(cell);
     Cell *bottomNeighbor = getBottomNeighbor(cell);
-    // Left neighbor
-    Cell *leftNeighbor = getLeftNeighbor(cell);    
+    Cell *leftNeighbor   = getLeftNeighbor(cell);    
 
-    Node *head = NULL;
     SMALL n = 0;
+    /* Stack that will contain the unvisited neighbors */
+    Node *head = NULL;
 
+    /* If the neighbor hasn't been visited, push it to the stack */
     if(topNeighbor != NULL && !topNeighbor->visited){
-        // printf("Top: (%i, %i)\n", topNeighbor->row, topNeighbor->col);
         push(&head, topNeighbor);
         n++;
     }
     if(rightNeighbor != NULL && !rightNeighbor->visited){
-        // printf("Right: (%i, %i)\n", rightNeighbor->row, rightNeighbor->col);
         push(&head, rightNeighbor);
         n++;
     }
     if(bottomNeighbor != NULL && !bottomNeighbor->visited){
-        // printf("Bottom: (%i, %i)\n", bottomNeighbor->row, bottomNeighbor->col);
         push(&head, bottomNeighbor);
         n++;
     }
     if(leftNeighbor != NULL && !leftNeighbor->visited){
-        // printf("Left: (%i, %i)\n", leftNeighbor->row, leftNeighbor->col);
         push(&head, leftNeighbor);
         n++;
     }
 
+    /* If none of the neighbors are available, then return NULL*/
     if (n == 0)
         return NULL;
 
+    /* Get a random neighbor from the stack */
     int r = rand() % n;
-
     Cell* neighbor = getIndex(&head, r);
-
+    /* Free the stack from the heap */
     freeList(&head);
 
     return neighbor;
 }
 
+/* Remove the walls between two adjacent cells */
 void removeWalls(Cell *curr, Cell *next){
 
-    SMALL dr = curr->row - next->row;
-    // [2, 0] [1, 0]    GO UP       curr->row = 2, next->row = 1 => 2 - 1 = 1    
-    // [1, 0] [2, 0]    GO DOWN     curr->row = 1, next->row = 2 => 1 - 2 = -1
+    SMALL dr = curr->row - next->row; // Difference between the rows
+    SMALL dc = curr->col - next->col; // Difference between the columns
 
-    SMALL dc = curr->col - next->col;
-    // [0, 2] [0, 1]    GO LEFT     curr = 2, next = 1 => curr - next = 1    
-    // [0, 1] [0, 2]    GO RIGHT    curr = 1, next = 2 => curr - next = -1   
-
-    // Remove top wall
+    /* Remove top wall */
     if (dr == 1){
         curr->walls[TOP] = false;
         next->walls[BOTTOM] = false;
     }
-    // Remove right wall
-    else if (dc == 255){
+    /* Remove right wall */
+    else if (dc == -1){
         curr->walls[RIGHT] = false;
         next->walls[LEFT] = false;
     } 
-    // Remove bottom wall
-    else if (dr == 255){
+    /* Remove bottom wall */
+    else if (dr == -1){
         curr->walls[BOTTOM] = false;
         next->walls[TOP] = false;
     } 
-    // Remove left wall
+    /* Remove left wall */
     else if (dc == 1){
         curr->walls[LEFT] = false;
         next->walls[RIGHT] = false;
     }
 }
 
+/* Display the maze on console */
 void showMaze(Cell *curr){
     Cell *p = NULL;
     printf("\t");
-    for(int j = 0; j < COLS; j++){
+    for(int j = 0; j < ncol; j++){
         p = curr + j;
         if(p->walls[TOP])
             printf(" _");
     }
     printf("\n");
-    for(int i = 0; i < ROWS; i++){
+    for(int i = 0; i < nrow; i++){
         printf("\t");
-        for(int j = 0; j < COLS; j++){
-            p = curr + i*COLS + j;
+        for(int j = 0; j < ncol; j++){
+            p = curr + i*ncol + j;
             if(p->walls[LEFT] && p->walls[BOTTOM])
                 printf("|_");
             else if (p->walls[LEFT])
@@ -230,35 +230,59 @@ void showMaze(Cell *curr){
     }
 }
 
-int main(void){
+/* Accepts two parameters, the no. of rows and the no. of columns of the maze */
+int main(int argc, char *argv[]){
+
+    /* Incorrect number of parameters */
+    if (argc != 3) {
+        SMALL err = 1;
+        printf("Usage: ./main nrow ncol\n");
+        printf("%i\n", err);
+        return err;
+    }
+
+    nrow = atoi(argv[1]);
+    ncol = atoi(argv[2]);
+    
+    /* Number of rows and columns must be greater or equal to 1 */
+    if (!(nrow >= 1 && ncol >= 1)){
+        SMALL err = 2;
+        printf("Usage: nrow > 0 and ncol > 0\n");
+        printf("%i\n", err);
+        return err;
+    }
 
     srand(time(0));
 
-    Cell grid[ROWS][COLS];
+    /* Declare the grid */
+    Cell grid[nrow][ncol];
 
-    // Pointer that traverses the grid
+    /* Pointer that will traverses the grid */
     Cell *curr = *grid;
 
-    // Auxiliar pointer that stores the neighbor
+    /* Pointer that stores the address of the neighbor */
     Cell *next = NULL;
 
-    // Initialize grid
+    /* Initialize grid */
     initGrid(curr);
     curr->visited = true;
 
-    // Initialize the stack
+    /* Declare the stack that will be used for backtracking */
     Node *stack = NULL;
 
-    /* Step 2*/
+    /* Generating maze */
     while(true){
+        /* Getting neighbor */
         next = checkNeighbors(curr);
+        /* Traversing the grid */
         if (next != NULL){
             push(&stack, curr);
             removeWalls(curr, next);
-            // printf("Going from [%i, %i] to [%i, %i]\n", curr->row, curr->col, next->row, next->col);
             curr = next;
             curr->visited = true;
-        } else if (!isEmpty(&stack)) {
+        } 
+        /* Backtracking */
+        else if (!isEmpty(&stack)) {
             Cell *temp = pop(&stack);
             while (!isEmpty(&stack) && checkNeighbors(temp) == NULL){
                 temp = pop(&stack);
@@ -269,7 +293,8 @@ int main(void){
         }
     }
 
-    printf("Drawing a <%i x %i> Maze\n", ROWS, COLS);
+    /* Display the maze on console */
+    printf("\nDrawing a %ix%i Maze\n", nrow, ncol);
     showMaze(curr);
 
     return 0;
